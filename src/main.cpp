@@ -29,13 +29,15 @@ GLFWwindow *window; // Main application window
 string RESOURCE_DIR = "./"; // Where the resources are loaded from
 bool OFFLINE = false;
 
+//Initialize these in init()
+
 shared_ptr<Camera> camera;
 shared_ptr<Program> prog;
 shared_ptr<Program> prog2;
 shared_ptr<Program> prog3;
 shared_ptr<Program> prog4;
-shared_ptr<Shape> shape;
-shared_ptr<Shape> shape2;
+shared_ptr<Shape> shape; //bunny
+shared_ptr<Shape> shape2; //teapot
 
 vector<shared_ptr<Program>> programs;
 shared_ptr<Program> currProgram;
@@ -79,7 +81,7 @@ static void mouse_button_callback(GLFWwindow *window, int button, int action, in
 		bool shift = (mods & GLFW_MOD_SHIFT) != 0;
 		bool ctrl  = (mods & GLFW_MOD_CONTROL) != 0;
 		bool alt   = (mods & GLFW_MOD_ALT) != 0;
-		camera->mouseClicked((float)xmouse, (float)ymouse, shift, ctrl, alt);
+		camera->mouseClicked((float)xmouse, (float)ymouse, shift, ctrl, alt); 
 	}
 }
 
@@ -88,10 +90,11 @@ static void cursor_position_callback(GLFWwindow* window, double xmouse, double y
 {
 	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 	if(state == GLFW_PRESS) {
-		camera->mouseMoved((float)xmouse, (float)ymouse);
+		camera->mouseMoved((float)xmouse, (float)ymouse); // updates camera transformations
 	}
 }
 
+// This function is called when a valid character is pressed
 static void char_callback(GLFWwindow *window, unsigned int key)
 {
 	keyToggles[key] = !keyToggles[key];
@@ -103,16 +106,18 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 	float translation_factor = 0.1f;
 
 	switch (key)
-	{
-		case 's':
+	{	
+		// Switch to next shader
+		case 's': 
 		{
 			if (progIndex < programs.size() - 1) {
 				progIndex++;
-				currProgram = programs[progIndex];
+				currProgram = programs[progIndex]; 
 			}
 
 			break;
 		}
+		// Switch to previous shader
 		case 'S':
 		{
 			if (progIndex >= 1) {
@@ -121,6 +126,7 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 			}
 			break;
 		}
+		// Switch to next material
 		case 'm':
 		{
 			if (matIndex < materials.size() - 1) {
@@ -129,6 +135,7 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 			}
 			break;
 		}
+		// Switch to previous material
 		case 'M':
 		{
 			if (matIndex >= 1) {
@@ -137,6 +144,7 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 			}
 			break;
 		}
+		// Switch to next light
 		case 'l':
 		{
 			if (lightIndex < lights.size() - 1) {
@@ -145,6 +153,7 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 			}
 			break;
 		}
+		// Switch to previous light
 		case 'L':
 		{
 			if (lightIndex >= 1) {
@@ -153,6 +162,7 @@ static void char_callback(GLFWwindow *window, unsigned int key)
 			}
 			break;
 		}
+		// Set up light translations
 		case 'x':
 		{
 			currLight->translatePosition_X(-1.0 * translation_factor);
@@ -221,7 +231,18 @@ static void init()
 
 	currProgram = make_shared<Program>();
 
+	/*
+	
+		Setup shader programs. 
+		-Add attributes and uniform variables
+		-varying variables are passed between vert and frag shader
+		-Attributes are sent in from Shape.cpp (aPos/aNor)
+		-Unifrom variables are passed from render()
+	
+	*/
+
 	//normal coloring
+	
 	prog = make_shared<Program>();
 	prog->setShaderNames(RESOURCE_DIR + "normal_vert.glsl", RESOURCE_DIR + "normal_frag.glsl");
 	prog->setVerbose(true);
@@ -234,25 +255,25 @@ static void init()
 	programs.push_back(prog);
 
 
-	//Lab7 Shader
+	//Blinn-Phong Shading
 	prog2 = make_shared<Program>();
 	prog2->setShaderNames(RESOURCE_DIR + "vert.glsl", RESOURCE_DIR + "frag.glsl");
 	prog2->setVerbose(true);
 	prog2->init();
 	prog2->addAttribute("aPos");
 	prog2->addAttribute("aNor");
-	prog2->addUniform("MV");
-	prog2->addUniform("P");
+	prog2->addUniform("MV");			// modelview matrix
+	prog2->addUniform("P");				// projection matrix
 	prog2->addUniform("lightPos1");
 	prog2->addUniform("lightPos2");
 	prog2->addUniform("lightColor1");
 	prog2->addUniform("lightColor2");
-	prog2->addUniform("ka");
-	prog2->addUniform("kd");
-	prog2->addUniform("ks");
-	prog2->addUniform("s");
+	prog2->addUniform("ka");			// ambient color
+	prog2->addUniform("kd");			// diffuse color
+	prog2->addUniform("ks");			// specular color
+	prog2->addUniform("s");				// shininess factor
 	prog2->setVerbose(false);
-	prog2->addUniform("MVit");
+	prog2->addUniform("MVit");			// inverse transpose: used to convert normals to camera space
 	programs.push_back(prog2);
 
 	//Silhouette shader
@@ -289,6 +310,11 @@ static void init()
 	prog4->setVerbose(false);
 	programs.push_back(prog4);
 
+	/*
+	
+		Set up the materials 
+	
+	*/
 
 	Material m1;
 	m1.setAmbient({ 0.2f, 0.2f, 0.2f });
@@ -310,6 +336,12 @@ static void init()
 	m3.setSpecular({ 0.3f, 0.3f, 0.45f });
 	m3.setShiny(2.0f);
 	materials.push_back(m3);
+
+	/*
+	
+		Set up the lights
+	
+	*/
 
 	Light l1;
 	l1.setPosition({ 1.0f, 1.0f, 1.0f });
@@ -381,7 +413,9 @@ static void render()
 	camera->applyViewMatrix(MV);
 
 	glm::mat4 S(1.0f);
-	S[0][1] = 0.5f * cos(t);
+	S[0][1] = 0.5f * cos(t); // Shear matrix
+
+	// Move bunny to the left side of the screen
 
 	MV->pushMatrix();
 	MV->translate({ -0.5f, -0.5f, 0.0f });
@@ -392,10 +426,10 @@ static void render()
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-		shape->draw(prog);
+		shape->draw(prog);																			// draw the bunny
 		prog->unbind();
-		MV->popMatrix();
-		MV->pushMatrix();
+		MV->popMatrix();																			// pop matrix so transformations do not propogate 
+		MV->pushMatrix();																			// Move the teapot to the top right of screen
 		MV->translate({ 0.5f, 0.0f, 0.0 });
 		MV->multMatrix(S);
 		MV->rotate(3.1415, { 0, 1, 0 });
@@ -403,7 +437,7 @@ static void render()
 		prog->bind();
 		glUniformMatrix4fv(prog->getUniform("P"), 1, GL_FALSE, glm::value_ptr(P->topMatrix()));
 		glUniformMatrix4fv(prog->getUniform("MV"), 1, GL_FALSE, glm::value_ptr(MV->topMatrix()));
-		shape2->draw(prog);
+		shape2->draw(prog);																			// draw teapot
 		prog->unbind();
 		MV->popMatrix();
 	}
