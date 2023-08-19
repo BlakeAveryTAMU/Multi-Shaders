@@ -16,9 +16,11 @@ This program uses OpenGL, GLSL, and C++ code to implement different shading mode
 <img src="./images/normalColoring.png" width="300" height="225">
 
 ## Blinn-Phong
+<p float="left">
 <img src="./images/blinnPhong1.png" width="300" height="225">
 <img src="./images/blinnPhong2.png" width="300" height="225">
 <img src="./images/blinnPhong3.png" width="300" height="225">
+</p>
 
 ## Silhouette Shader
 <img src="./images/silhouetteShader.png" width="300" height="225">
